@@ -1,0 +1,25 @@
+{
+  "name": "coupang-price-alert",
+  "version": "1.0.0",
+  "description": "쿠팡 키워드 가격 알림 서비스",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "install:browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.6.1",
+    "nodemailer": "^6.10.1",
+    "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/node": "^20.19.41",
+    "@types/nodemailer": "^6.4.23",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
