@@ -52,7 +52,8 @@ export async function searchProductsByKeyword(
   const secretKey = process.env.COUPANG_SECRET_KEY;
 
   if (!accessKey || !secretKey) {
-    throw new Error('COUPANG_ACCESS_KEY / COUPANG_SECRET_KEY 환경변수가 설정되지 않았습니다.');
+      console.log('[PartnersAPI] API 키 미설정 → 스크래퍼 모드로 동작');
+      return null;
   }
 
   if (!canCallApi()) {
