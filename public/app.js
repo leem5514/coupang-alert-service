@@ -63,7 +63,7 @@ function renderCard(item) {
         <div class="progress-bar" style="width:${progress}%"></div>
       </div>
       <div class="card-footer">
-        <span class="status-pill">${reached ? '● 목표가 도달' : '● 감시 중'}</span>
+        <span class="status-pill">${reached ? '● 목표가 도달' : '● 추적 중'}</span>
         <span>${relativeTime(nextCheck)}</span>
       </div>
     </article>`;
