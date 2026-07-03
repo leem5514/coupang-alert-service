@@ -1,0 +1,51 @@
+<svg width="1200" height="430" viewBox="0 0 1200 430" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="430" rx="24" fill="#F7F8FA"/>
+  <text x="64" y="66" fill="#17191C" font-family="Arial, sans-serif" font-size="27" font-weight="700">Coupang Price Tracker</text>
+  <text x="64" y="94" fill="#69717B" font-family="Arial, sans-serif" font-size="14">상품 등록부터 가격 조회, 저장, 이메일 알림까지의 데이터 흐름</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="64" y="154" width="188" height="160" rx="16" fill="white" stroke="#E5E8EC"/>
+    <rect x="64" y="154" width="6" height="160" rx="3" fill="#2777D3"/>
+    <circle cx="112" cy="200" r="21" fill="#EAF3FC"/>
+    <path d="M103 200h18M112 191v18" stroke="#2777D3" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="96" y="248" fill="#17191C" font-size="17" font-weight="700">Web UI</text>
+    <text x="96" y="274" fill="#69717B" font-size="12">상품·목표가 등록</text>
+    <text x="96" y="293" fill="#69717B" font-size="12">대시보드 조회</text>
+
+    <rect x="324" y="154" width="188" height="160" rx="16" fill="white" stroke="#E5E8EC"/>
+    <rect x="324" y="154" width="6" height="160" rx="3" fill="#E52528"/>
+    <circle cx="372" cy="200" r="21" fill="#FFF0F0"/>
+    <path d="M362 194h20M362 200h20M362 206h13" stroke="#E52528" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="356" y="248" fill="#17191C" font-size="17" font-weight="700">Node Server</text>
+    <text x="356" y="274" fill="#69717B" font-size="12">REST API</text>
+    <text x="356" y="293" fill="#69717B" font-size="12">동적 스케줄러</text>
+
+    <rect x="584" y="154" width="188" height="160" rx="16" fill="white" stroke="#E5E8EC"/>
+    <rect x="584" y="154" width="6" height="160" rx="3" fill="#F5B51B"/>
+    <circle cx="632" cy="200" r="21" fill="#FFF8E6"/>
+    <ellipse cx="632" cy="193" rx="11" ry="5" stroke="#C88700" stroke-width="2"/>
+    <path d="M621 193v14c0 3 5 5 11 5s11-2 11-5v-14" stroke="#C88700" stroke-width="2"/>
+    <text x="616" y="248" fill="#17191C" font-size="17" font-weight="700">SQLite</text>
+    <text x="616" y="274" fill="#69717B" font-size="12">추적 상품</text>
+    <text x="616" y="293" fill="#69717B" font-size="12">가격 이력</text>
+
+    <rect x="844" y="126" width="292" height="91" rx="16" fill="white" stroke="#E5E8EC"/>
+    <rect x="844" y="126" width="6" height="91" rx="3" fill="#369947"/>
+    <text x="878" y="164" fill="#17191C" font-size="16" font-weight="700">Coupang API / Playwright</text>
+    <text x="878" y="188" fill="#69717B" font-size="12">최저가와 상품 링크 수집</text>
+
+    <rect x="844" y="245" width="292" height="91" rx="16" fill="white" stroke="#E5E8EC"/>
+    <rect x="844" y="245" width="6" height="91" rx="3" fill="#E52528"/>
+    <text x="878" y="283" fill="#17191C" font-size="16" font-weight="700">Gmail SMTP</text>
+    <text x="878" y="307" fill="#69717B" font-size="12">목표가 도달 이메일 발송</text>
+
+    <path d="M252 234h58" stroke="#B7BDC5" stroke-width="2"/>
+    <path d="M303 229l7 5-7 5" stroke="#B7BDC5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M512 234h58" stroke="#B7BDC5" stroke-width="2"/>
+    <path d="M563 229l7 5-7 5" stroke="#B7BDC5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M772 197h58" stroke="#B7BDC5" stroke-width="2"/>
+    <path d="M823 192l7 5-7 5" stroke="#B7BDC5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M772 274h58" stroke="#B7BDC5" stroke-width="2"/>
+    <path d="M823 269l7 5-7 5" stroke="#B7BDC5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
