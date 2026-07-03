@@ -1,4 +1,4 @@
-import type { ScheduleTask, WatchItem, IntervalResult, SearchResult } from '../types';
+import type { ScheduleTask, IntervalResult, SearchResult } from '../types';
 import { searchProductsByKeyword, getApiRateLimitStatus } from '../api/coupangPartners';
 import { scrapeSearchResults } from '../scraper/coupangScraper';
 import { sendPriceAlert } from '../notifier/emailNotifier';
@@ -10,13 +10,11 @@ import {
 } from '../db/database';
 
 const tasks = new Map<number, ScheduleTask>();
+const taskTimers = new Map<number, NodeJS.Timeout>();
 let schedulerTimer: NodeJS.Timeout | null = null;
 const USE_FALLBACK = process.env.USE_SCRAPER_FALLBACK !== 'false';
 
-function calcInterval(
-  currentPrice: number | null,
-  targetPrice: number
-): IntervalResult {
+function calcInterval(currentPrice: number | null, targetPrice: number): IntervalResult {
   const API_MIN_MS = 6 * 60 * 1000;
 
   if (currentPrice === null) {
@@ -24,12 +22,10 @@ function calcInterval(
   }
 
   const diffPct = ((currentPrice - targetPrice) / targetPrice) * 100;
-
-  if (diffPct > 20) return { intervalMs: 20 * 60 * 1000, reason: `목표가와 ${diffPct.toFixed(0)}% 차이 → 20분` };
-  if (diffPct > 10) return { intervalMs: 10 * 60 * 1000, reason: `목표가와 ${diffPct.toFixed(0)}% 차이 → 10분` };
-  if (diffPct > 5)  return { intervalMs: API_MIN_MS,        reason: `목표가와 ${diffPct.toFixed(0)}% 차이 → 6분` };
-
-  return { intervalMs: API_MIN_MS, reason: `목표가와 ${diffPct.toFixed(0)}% 이내 → 6분 + 스크래퍼 병행` };
+  if (diffPct > 20) return { intervalMs: 20 * 60 * 1000, reason: `목표가와 ${diffPct.toFixed(0)}% 차이` };
+  if (diffPct > 10) return { intervalMs: 10 * 60 * 1000, reason: `목표가와 ${diffPct.toFixed(0)}% 차이` };
+  if (diffPct > 5) return { intervalMs: API_MIN_MS, reason: `목표가와 ${diffPct.toFixed(0)}% 차이` };
+  return { intervalMs: API_MIN_MS, reason: `목표가 ${diffPct.toFixed(0)}% 이내` };
 }
 
 async function fetchPrice(keyword: string, isCloseToTarget: boolean): Promise<SearchResult | null> {
@@ -37,7 +33,7 @@ async function fetchPrice(keyword: string, isCloseToTarget: boolean): Promise<Se
   if (apiStatus.remaining > 0) {
     const result = await searchProductsByKeyword(keyword);
     if (result) {
-      console.log(`[API] "${keyword}" → 최저가 ${result.lowestPrice.toLocaleString()}원 (남은 API: ${apiStatus.remaining - 1}회)`);
+      console.log(`[API] "${keyword}" 최저가 ${result.lowestPrice.toLocaleString()}원`);
       return result;
     }
   }
@@ -51,14 +47,15 @@ async function fetchPrice(keyword: string, isCloseToTarget: boolean): Promise<Se
 }
 
 async function runTask(task: ScheduleTask): Promise<void> {
-  const { watchItemId, keyword, targetPrice, currentPrice } = task;
+  if (!tasks.has(task.watchItemId)) return;
 
+  const { watchItemId, keyword, targetPrice, currentPrice } = task;
   const diffPct = currentPrice
     ? ((currentPrice - targetPrice) / targetPrice) * 100
     : Infinity;
-  const isClose = diffPct < 5;
+  const result = await fetchPrice(keyword, diffPct < 5);
 
-  const result = await fetchPrice(keyword, isClose);
+  if (!tasks.has(watchItemId)) return;
 
   if (!result) {
     task.consecutiveApiErrors++;
@@ -69,41 +66,45 @@ async function runTask(task: ScheduleTask): Promise<void> {
 
   task.consecutiveApiErrors = 0;
   task.currentPrice = result.lowestPrice;
-
   addPriceHistory(watchItemId, result.lowestPrice, result.lowestProduct.seller, result.lowestProduct.productUrl);
   updateLastChecked(watchItemId);
 
   if (result.lowestPrice <= targetPrice) {
-    const items = getAllActiveWatchItems();
-    const item = items.find(i => i.id === watchItemId);
+    const item = getAllActiveWatchItems().find(candidate => candidate.id === watchItemId);
     if (item) {
       await sendPriceAlert(item, result);
       updateLastNotified(watchItemId);
-      console.log(`🎉 [Alert] "${keyword}" 목표가 달성! ${result.lowestPrice.toLocaleString()}원`);
+      console.log(`[Alert] "${keyword}" 목표가 달성: ${result.lowestPrice.toLocaleString()}원`);
     }
   }
 
   const { intervalMs, reason } = calcInterval(result.lowestPrice, targetPrice);
   task.intervalMs = intervalMs;
-  console.log(`[Scheduler] "${keyword}" 다음 체크: ${reason}`);
-
+  console.log(`[Scheduler] "${keyword}" 다음 확인: ${reason}`);
   scheduleNext(task);
 }
 
-function scheduleNext(task: ScheduleTask): void {
-  task.nextCheckAt = new Date(Date.now() + task.intervalMs);
-  setTimeout(() => runTask(task), task.intervalMs);
+function scheduleNext(task: ScheduleTask, delayMs = task.intervalMs): void {
+  const previous = taskTimers.get(task.watchItemId);
+  if (previous) clearTimeout(previous);
+
+  task.nextCheckAt = new Date(Date.now() + delayMs);
+  const timer = setTimeout(() => {
+    taskTimers.delete(task.watchItemId);
+    void runTask(task);
+  }, delayMs);
+  taskTimers.set(task.watchItemId, timer);
 }
 
-export function startScheduler(): void {
-  console.log('🚀 스케줄러 시작...');
-  loadWatchItems();
-  schedulerTimer = setInterval(loadWatchItems, 60_000);
-}
+export function syncScheduler(): void {
+  const activeItems = getAllActiveWatchItems();
+  const activeIds = new Set(activeItems.map(item => item.id));
 
-function loadWatchItems(): void {
-  const items = getAllActiveWatchItems();
-  for (const item of items) {
+  for (const id of tasks.keys()) {
+    if (!activeIds.has(id)) removeScheduledTask(id);
+  }
+
+  for (const item of activeItems) {
     if (tasks.has(item.id)) continue;
 
     const task: ScheduleTask = {
@@ -116,28 +117,42 @@ function loadWatchItems(): void {
       consecutiveApiErrors: 0,
     };
     tasks.set(item.id, task);
-
-    const jitterMs = tasks.size * 5000;
-    console.log(`[Scheduler] "${item.keyword}" 등록 (${jitterMs / 1000}초 후 첫 체크)`);
-    setTimeout(() => runTask(task), jitterMs);
+    const jitterMs = Math.max(1_000, tasks.size * 2_000);
+    console.log(`[Scheduler] "${item.keyword}" 등록 (${jitterMs / 1000}초 후 첫 확인)`);
+    scheduleNext(task, jitterMs);
   }
+}
+
+export function removeScheduledTask(watchItemId: number): void {
+  const timer = taskTimers.get(watchItemId);
+  if (timer) clearTimeout(timer);
+  taskTimers.delete(watchItemId);
+  tasks.delete(watchItemId);
+}
+
+export function startScheduler(): void {
+  if (schedulerTimer) return;
+  console.log('가격 확인 스케줄러 시작');
+  syncScheduler();
+  schedulerTimer = setInterval(syncScheduler, 60_000);
 }
 
 export function stopScheduler(): void {
-  if (schedulerTimer) {
-    clearInterval(schedulerTimer);
-    schedulerTimer = null;
-  }
+  if (schedulerTimer) clearInterval(schedulerTimer);
+  schedulerTimer = null;
+  for (const timer of taskTimers.values()) clearTimeout(timer);
+  taskTimers.clear();
   tasks.clear();
-  console.log('스케줄러 종료');
+  console.log('가격 확인 스케줄러 종료');
 }
 
 export function getTaskStatuses() {
-  return [...tasks.values()].map(t => ({
-    keyword: t.keyword,
-    targetPrice: t.targetPrice,
-    currentPrice: t.currentPrice,
-    nextCheckAt: t.nextCheckAt,
-    intervalMin: Math.round(t.intervalMs / 60000),
+  return [...tasks.values()].map(task => ({
+    watchItemId: task.watchItemId,
+    keyword: task.keyword,
+    targetPrice: task.targetPrice,
+    currentPrice: task.currentPrice,
+    nextCheckAt: task.nextCheckAt,
+    intervalMin: Math.round(task.intervalMs / 60000),
   }));
 }

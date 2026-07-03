@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="원하는 쿠팡 상품의 목표 가격을 등록하고 가격 변화를 확인하세요.">
+  <title>살까말까 · 쿠팡 가격 알림</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="살까말까 홈">
+        <span class="brand-mark">₩</span>
+        <span>살까말까</span>
+      </a>
+      <div class="service-state"><span class="live-dot"></span> 가격 감시 중</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PRICE WATCHLIST</p>
+          <h1>기다리던 가격이 오면,<br><em>놓치지 않게.</em></h1>
+          <p class="hero-description">상품 키워드와 원하는 가격을 남겨두세요.<br>가격이 내려오면 이메일로 조용히 알려드릴게요.</p>
+        </div>
+
+        <form class="watch-form" id="watch-form">
+          <div class="form-heading">
+            <div>
+              <p class="form-kicker">새 가격 알림</p>
+              <h2>무엇을 기다리고 있나요?</h2>
+            </div>
+            <span class="step-badge">01</span>
+          </div>
+
+          <label>
+            <span>상품 키워드</span>
+            <input name="keyword" type="text" minlength="2" maxlength="80" placeholder="예: 에어팟 프로 2세대" required>
+          </label>
+          <div class="field-row">
+            <label>
+              <span>목표 가격</span>
+              <div class="price-input">
+                <input name="targetPrice" type="text" inputmode="numeric" placeholder="200,000" required>
+                <b>원</b>
+              </div>
+            </label>
+            <label>
+              <span>알림 이메일</span>
+              <input name="email" type="email" placeholder="me@example.com" required>
+            </label>
+          </div>
+          <button class="primary-button" type="submit">
+            <span>가격 알림 시작하기</span><span aria-hidden="true">→</span>
+          </button>
+          <p class="form-note">등록 후 몇 초 안에 첫 가격 확인을 시작합니다.</p>
+        </form>
+      </section>
+
+      <section class="dashboard-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MY WATCHLIST</p>
+            <h2>기다리는 상품</h2>
+          </div>
+          <div class="stats">
+            <div><strong id="item-count">0</strong><span>감시 중</span></div>
+            <div><strong id="api-count">—</strong><span>API 잔여</span></div>
+          </div>
+        </div>
+
+        <div class="watch-grid" id="watch-grid" aria-live="polite"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <span class="empty-icon">⌁</span>
+          <h3>아직 기다리는 상품이 없어요</h3>
+          <p>위에서 첫 번째 가격 알림을 등록해 보세요.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>살까말까 <b>·</b> 개인용 가격 알림</span>
+      <span>상품 가격과 재고는 쿠팡에서 최종 확인해 주세요.</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
