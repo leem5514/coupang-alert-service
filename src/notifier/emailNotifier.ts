@@ -85,3 +85,28 @@ export async function sendPriceAlert(
 
   console.log(`[Email] "${item.keyword}" 알림 발송 완료 → ${item.email}`);
 }
+
+/* 이메일 연결 테스트 기능: 필요할 때 주석을 해제하세요.
+export async function sendTestEmail(to: string): Promise<void> {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER와 EMAIL_PASS를 .env에 먼저 설정해 주세요.');
+  }
+
+  await getTransporter().sendMail({
+    from: `"쿠팡 가격 추적기" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: '[쿠팡 가격 추적기] 이메일 설정이 완료되었습니다',
+    html: `
+      <div style="font-family:Arial,'Apple SD Gothic Neo',sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f7f8fa">
+        <div style="background:#fff;border:1px solid #e5e8ec;border-radius:12px;padding:32px">
+          <div style="display:inline-block;background:#e52528;color:#fff;font-weight:700;padding:8px 12px;border-radius:8px">PRICE TRACKER</div>
+          <h1 style="margin:24px 0 10px;color:#17191c;font-size:24px">테스트 메일이 도착했습니다</h1>
+          <p style="margin:0;color:#69717b;line-height:1.7;font-size:14px">
+            이메일 발송 설정이 정상적으로 연결되었습니다.<br>
+            추적 중인 상품이 목표 가격에 도달하면 이 주소로 알려드릴게요.
+          </p>
+        </div>
+      </div>`,
+  });
+}
+*/

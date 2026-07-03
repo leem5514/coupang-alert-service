@@ -17,9 +17,11 @@ import {
 } from './scheduler/dynamicScheduler';
 import { getApiRateLimitStatus } from './api/coupangPartners';
 import { closeBrowser } from './scraper/coupangScraper';
+// import { sendTestEmail } from './notifier/emailNotifier';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
+// let lastTestEmailAt = 0;
 
 const mimeTypes: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -82,6 +84,30 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, pathname: st
     json(res, 201, item);
     return true;
   }
+
+  /* 이메일 연결 테스트 API: 필요할 때 주석을 해제하세요.
+  if (req.method === 'POST' && pathname === '/api/test-email') {
+    const body = await readJson(req);
+    const email = String(body.email ?? '').trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      json(res, 400, { message: '테스트 메일을 받을 이메일 주소를 입력해 주세요.' });
+      return true;
+    }
+
+    const cooldownMs = 60_000;
+    if (Date.now() - lastTestEmailAt < cooldownMs) {
+      const remainingSec = Math.ceil((cooldownMs - (Date.now() - lastTestEmailAt)) / 1000);
+      json(res, 429, { message: `${remainingSec}초 후 다시 시도해 주세요.` });
+      return true;
+    }
+
+    await sendTestEmail(email);
+    lastTestEmailAt = Date.now();
+    json(res, 200, { ok: true });
+    return true;
+  }
+  */
 
   const itemMatch = pathname.match(/^\/api\/watch-items\/(\d+)$/);
   if (req.method === 'DELETE' && itemMatch) {

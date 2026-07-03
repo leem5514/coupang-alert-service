@@ -5,6 +5,7 @@ const itemCount = document.querySelector('#item-count');
 const apiCount = document.querySelector('#api-count');
 const toast = document.querySelector('#toast');
 const priceInput = form.elements.targetPrice;
+// const testEmailButton = document.querySelector('#test-email-button');
 
 const won = new Intl.NumberFormat('ko-KR');
 let toastTimer;
@@ -115,6 +116,36 @@ form.addEventListener('submit', async (event) => {
     button.disabled = false;
   }
 });
+
+/* 이메일 연결 테스트 기능: 필요할 때 주석을 해제하세요.
+testEmailButton.addEventListener('click', async () => {
+  const email = String(form.elements.email.value ?? '').trim();
+  if (!email || !form.elements.email.checkValidity()) {
+    form.elements.email.reportValidity();
+    return;
+  }
+
+  testEmailButton.disabled = true;
+  const originalLabel = testEmailButton.querySelector('span').textContent;
+  testEmailButton.querySelector('span').textContent = '전송 중...';
+
+  try {
+    const response = await fetch('/api/test-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || '테스트 메일을 보내지 못했습니다.');
+    showToast('테스트 메일을 보냈어요. 받은편지함을 확인해 주세요.');
+  } catch (error) {
+    showToast(error.message, true);
+  } finally {
+    testEmailButton.disabled = false;
+    testEmailButton.querySelector('span').textContent = originalLabel;
+  }
+});
+*/
 
 grid.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-delete-id]');

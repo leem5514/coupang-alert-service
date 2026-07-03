@@ -97,6 +97,11 @@ input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(229,37,40,.09
 .price-input { position: relative; }
 .price-input input { padding-right: 42px; }
 .price-input b { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+/* 이메일 연결 테스트 버튼: 기능 재활성화 시 주석을 해제하세요.
+.test-email-button { width: 100%; margin-top: 8px; padding: 9px 11px; display: flex; justify-content: space-between; border: 1px solid #d9dde2; border-radius: 7px; color: #4d535b; background: #fff; font-size: 10px; font-weight: 800; transition: border-color .2s, color .2s, background .2s; }
+.test-email-button:hover { border-color: var(--red); color: var(--red); background: #fffafa; }
+.test-email-button:disabled { opacity: .5; cursor: wait; }
+*/
 .primary-button { width: 100%; margin-top: 22px; padding: 16px 18px; border: 0; border-radius: 8px; display: flex; justify-content: space-between; color: #fff; background: var(--red); font-weight: 800; transition: background .2s, transform .2s; }
 .primary-button:hover { background: var(--red-dark); transform: translateY(-1px); }
 .primary-button:disabled { opacity: .55; cursor: wait; transform: none; }
