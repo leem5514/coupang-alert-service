@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="쿠팡 상품의 최저가를 추적하고 목표 가격 알림을 받아보세요.">
-  <title>쿠팡 가격 추적기</title>
+  <meta name="description" content="공식 가격 데이터 공급자를 연결해 키워드별 최저가를 추적하고 이메일로 알려주는 서비스">
+  <title>최저가 레이더</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -13,99 +13,60 @@
 <body>
   <div class="page-shell">
     <header class="topbar">
-      <a class="brand" href="/" aria-label="쿠팡 가격 추적기 홈">
+      <a class="brand" href="/" aria-label="최저가 레이더 홈">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 40 40" role="img">
-            <path class="tag-shape" d="M7.5 8.5h15.8l9.2 9.2v14.8H7.5z"/>
-            <circle class="tag-hole" cx="22.3" cy="14.4" r="2.1"/>
-            <path class="chart-line" d="M12.5 25.7l4.5-4 4 3 6-6"/>
-            <path class="chart-arrow" d="M23.5 18.7H27v3.5"/>
-          </svg>
-          <i class="color-dots"><b></b><b></b><b></b><b></b></i>
+          <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" class="tag-shape"/><circle cx="20" cy="20" r="9" fill="none" stroke="white" stroke-width="2"/><path d="M20 20l8-6" class="chart-line"/><circle cx="20" cy="20" r="2.5" fill="white"/></svg>
         </span>
-        <span class="brand-name">쿠팡 가격 추적기<small>PRICE TRACKER</small></span>
+        <span class="brand-name">최저가 레이더<small>PRICE RADAR</small></span>
       </a>
-      <div class="service-state"><span class="live-dot"></span> 모니터링 정상</div>
+      <div class="service-state"><span class="live-dot"></span><span id="provider-label">공급자 확인 중</span></div>
     </header>
 
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">COUPANG PRICE TRACKER</p>
-          <h1>쿠팡 가격을 추적하고<br><em>최저가를 확인하세요.</em></h1>
-          <p class="hero-description">상품 키워드와 목표 가격을 등록하면 주기적으로 가격을 수집합니다.<br>목표 가격에 도달하면 이메일로 알려드려요.</p>
-          <div class="feature-list" aria-label="주요 기능">
-            <span><b>01</b> 자동 가격 수집</span>
-            <span><b>02</b> 목표가 알림</span>
-            <span><b>03</b> 가격 이력 저장</span>
+          <p class="eyebrow">KEYWORD PRICE ALERT</p>
+          <h1>원하는 상품의 가격을<br><em>한곳에서 추적하세요.</em></h1>
+          <p class="hero-description">공식 사용 권한이 있는 가격 API를 연결하는 구조입니다.<br>같은 검색어는 한 번만 조회하고 결과를 함께 사용합니다.</p>
+          <div class="feature-list">
+            <span><b>01</b> 키워드 필터</span><span><b>02</b> 적응형 조회</span><span><b>03</b> 중복 알림 방지</span>
           </div>
         </div>
 
         <form class="watch-form" id="watch-form">
           <div class="form-heading">
-            <div>
-              <p class="form-kicker">새 추적 상품</p>
-              <h2>가격 추적 등록</h2>
-            </div>
+            <div><p class="form-kicker">새 가격 추적</p><h2>키워드 등록</h2></div>
             <span class="step-badge">01</span>
           </div>
-
           <label>
-            <span>쿠팡 상품 키워드</span>
-            <input name="keyword" type="text" minlength="2" maxlength="80" placeholder="예: 에어팟 프로 2세대" required>
+            <span>검색 키워드</span>
+            <input name="keyword" type="text" minlength="2" maxlength="80" placeholder="#아이폰13pro" required>
           </label>
-          <div class="field-row">
-            <label>
-              <span>목표 가격</span>
-              <div class="price-input">
-                <input name="targetPrice" type="text" inputmode="numeric" placeholder="200,000" required>
-                <b>원</b>
-              </div>
-            </label>
-            <label>
-              <span>알림 이메일</span>
-              <input name="email" type="email" placeholder="me@example.com" required>
-              <!-- 이메일 연결 테스트 기능: 필요할 때 주석을 해제하세요.
-              <button class="test-email-button" id="test-email-button" type="button">
-                <span>이메일 연결 테스트</span><span aria-hidden="true">↗</span>
-              </button>
-              -->
-            </label>
+          <div class="filter-grid">
+            <label><span>필수 포함어 <small>쉼표로 구분</small></span><input name="requiredTerms" type="text" placeholder="256GB, 자급제"></label>
+            <label><span>제외어 <small>쉼표로 구분</small></span><input name="excludedTerms" type="text" placeholder="케이스, 중고, 리퍼, 렌탈"></label>
           </div>
-          <button class="primary-button" type="submit">
-            <span>가격 추적 시작</span><span aria-hidden="true">→</span>
-          </button>
-          <p class="form-note">등록 후 자동으로 첫 가격 수집을 시작합니다.</p>
+          <div class="field-row">
+            <label><span>목표 가격</span><div class="price-input"><input name="targetPrice" type="text" inputmode="numeric" placeholder="700,000" required><b>원</b></div></label>
+            <label><span>알림 이메일</span><input name="email" type="email" placeholder="me@example.com" required></label>
+          </div>
+          <button class="primary-button" type="submit"><span>최저가 추적 시작</span><span aria-hidden="true">→</span></button>
+          <p class="form-note">데모 모드에서는 실제 쇼핑 가격이 아닌 시뮬레이션 데이터가 표시됩니다.</p>
         </form>
       </section>
 
       <section class="dashboard-section">
+        <div class="provider-banner" id="provider-banner" hidden></div>
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">TRACKED PRODUCTS</p>
-            <h2>추적 중인 상품</h2>
-          </div>
-          <div class="stats">
-            <div><strong id="item-count">0</strong><span>추적 상품</span></div>
-            <div><strong id="api-count">—</strong><span>API 잔여</span></div>
-          </div>
+          <div><p class="eyebrow">TRACKED KEYWORDS</p><h2>추적 중인 키워드</h2></div>
+          <div class="stats"><div><strong id="item-count">0</strong><span>추적 항목</span></div><div><strong id="provider-code">—</strong><span>데이터 공급자</span></div></div>
         </div>
-
         <div class="watch-grid" id="watch-grid" aria-live="polite"></div>
-        <div class="empty-state" id="empty-state" hidden>
-          <span class="empty-icon">⌁</span>
-          <h3>추적 중인 상품이 없습니다</h3>
-          <p>위 입력창에서 쿠팡 상품을 등록해 보세요.</p>
-        </div>
+        <div class="empty-state" id="empty-state" hidden><span class="empty-icon">⌁</span><h3>추적 중인 키워드가 없습니다</h3><p>위 입력창에서 첫 번째 키워드를 등록해 보세요.</p></div>
       </section>
     </main>
-
-    <footer>
-      <span>쿠팡 가격 추적기 <b>·</b> 개인용 스크래핑 도구</span>
-      <span>구매 전 실제 상품 가격과 재고를 쿠팡에서 확인해 주세요.</span>
-    </footer>
+    <footer><span>최저가 레이더 <b>·</b> 공식 데이터 공급자 연결형</span><span>가격과 재고는 판매처에서 최종 확인해 주세요.</span></footer>
   </div>
-
   <div class="toast" id="toast" role="status"></div>
   <script src="/app.js" defer></script>
 </body>

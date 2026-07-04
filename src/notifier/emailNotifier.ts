@@ -1,112 +1,53 @@
 import nodemailer from 'nodemailer';
-import type { WatchItem, SearchResult } from '../types';
+import type { SearchResult, WatchItem } from '../types';
 
 let transporter: nodemailer.Transporter | null = null;
 
 function getTransporter(): nodemailer.Transporter {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER와 EMAIL_PASS를 설정해야 알림을 보낼 수 있습니다.');
+  }
   if (!transporter) {
     transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
   }
   return transporter;
 }
 
-export async function sendPriceAlert(
-  item: WatchItem,
-  result: SearchResult
-): Promise<void> {
-  const { lowestProduct, products } = result;
-  const drop = item.targetPrice - lowestProduct.price;
-  const dropPct = Math.round((drop / item.targetPrice) * 100);
-
-  const topThree = products.slice(0, 3);
-  const tableRows = topThree
-    .map(
-      (p, i) => `
-      <tr style="background:${i === 0 ? '#fff8e1' : '#fff'}">
-        <td style="padding:10px 14px;font-weight:${i === 0 ? '700' : '400'}">${i + 1}위 ${p.seller}</td>
-        <td style="padding:10px 14px;text-align:right;font-weight:${i === 0 ? '700' : '400'};color:${i === 0 ? '#e53935' : '#333'}">
-          ${p.price.toLocaleString()}원
-        </td>
-        <td style="padding:10px 14px;text-align:center">
-          <a href="${p.productUrl}" style="background:#e53935;color:#fff;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px">바로가기</a>
-        </td>
-      </tr>`
-    )
-    .join('');
-
-  const html = `
-<!DOCTYPE html>
-<html lang="ko">
-<head><meta charset="UTF-8"></head>
-<body style="font-family:'Apple SD Gothic Neo',sans-serif;background:#f5f5f5;margin:0;padding:20px">
-  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
-    <div style="background:#e53935;padding:24px 28px">
-      <p style="color:#fff;margin:0;font-size:13px;opacity:0.85">🔔 가격 알림</p>
-      <h1 style="color:#fff;margin:8px 0 0;font-size:22px">${item.keyword}</h1>
-      <p style="color:#fff;margin:6px 0 0;font-size:14px;opacity:0.9">목표가 ${item.targetPrice.toLocaleString()}원 이하 달성!</p>
-    </div>
-    <div style="padding:24px 28px;border-bottom:1px solid #f0f0f0;text-align:center">
-      <p style="color:#999;margin:0 0 6px;font-size:13px">현재 최저가</p>
-      <p style="color:#e53935;margin:0;font-size:36px;font-weight:700">${lowestProduct.price.toLocaleString()}원</p>
-      <p style="color:#4caf50;margin:8px 0 0;font-size:14px">▼ 목표가보다 ${drop.toLocaleString()}원 (${dropPct}%) 저렴</p>
-    </div>
-    <div style="padding:20px 28px">
-      <p style="font-size:14px;font-weight:600;color:#333;margin:0 0 12px">판매처별 가격 비교</p>
-      <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <thead>
-          <tr style="background:#f5f5f5">
-            <th style="padding:10px 14px;text-align:left;font-weight:600;color:#666">판매처</th>
-            <th style="padding:10px 14px;text-align:right;font-weight:600;color:#666">가격</th>
-            <th style="padding:10px 14px;text-align:center;font-weight:600;color:#666">링크</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>
-    <div style="background:#f9f9f9;padding:16px 28px;text-align:center">
-      <p style="color:#bbb;margin:0;font-size:12px">쿠팡 가격 알림 서비스 · 가격은 변동될 수 있습니다</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-  await getTransporter().sendMail({
-    from: `"가격알림 🔔" <${process.env.EMAIL_USER}>`,
-    to: item.email,
-    subject: `[가격알림] ${item.keyword} 목표가 도달! ${lowestProduct.price.toLocaleString()}원`,
-    html,
-  });
-
-  console.log(`[Email] "${item.keyword}" 알림 발송 완료 → ${item.email}`);
+function safe(value: string): string {
+  return value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!));
 }
 
-/* 이메일 연결 테스트 기능: 필요할 때 주석을 해제하세요.
-export async function sendTestEmail(to: string): Promise<void> {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('EMAIL_USER와 EMAIL_PASS를 .env에 먼저 설정해 주세요.');
-  }
+export async function sendPriceAlert(item: WatchItem, result: SearchResult): Promise<void> {
+  const offer = result.lowestOffer;
+  const rows = result.offers.slice(0, 3).map((value, index) => `
+    <tr>
+      <td style="padding:11px;border-bottom:1px solid #eee">${index + 1}. ${safe(value.seller)}</td>
+      <td style="padding:11px;border-bottom:1px solid #eee;text-align:right;font-weight:700">${value.price.toLocaleString()}원</td>
+      <td style="padding:11px;border-bottom:1px solid #eee;text-align:right"><a href="${safe(value.productUrl)}">상품 보기</a></td>
+    </tr>`).join('');
 
   await getTransporter().sendMail({
-    from: `"쿠팡 가격 추적기" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: '[쿠팡 가격 추적기] 이메일 설정이 완료되었습니다',
+    from: `"최저가 레이더" <${process.env.EMAIL_USER}>`,
+    to: item.email,
+    subject: `[최저가 알림] ${item.keyword} ${offer.price.toLocaleString()}원`,
     html: `
-      <div style="font-family:Arial,'Apple SD Gothic Neo',sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f7f8fa">
-        <div style="background:#fff;border:1px solid #e5e8ec;border-radius:12px;padding:32px">
-          <div style="display:inline-block;background:#e52528;color:#fff;font-weight:700;padding:8px 12px;border-radius:8px">PRICE TRACKER</div>
-          <h1 style="margin:24px 0 10px;color:#17191c;font-size:24px">테스트 메일이 도착했습니다</h1>
-          <p style="margin:0;color:#69717b;line-height:1.7;font-size:14px">
-            이메일 발송 설정이 정상적으로 연결되었습니다.<br>
-            추적 중인 상품이 목표 가격에 도달하면 이 주소로 알려드릴게요.
-          </p>
+      <div style="font-family:Arial,'Apple SD Gothic Neo',sans-serif;max-width:560px;margin:auto;background:#f7f8fa;padding:24px">
+        <div style="background:#fff;border:1px solid #e5e8ec;border-radius:14px;overflow:hidden">
+          <div style="background:#17191c;color:#fff;padding:24px">
+            <small>PRICE RADAR · ${safe(result.provider.toUpperCase())}</small>
+            <h1 style="margin:8px 0 0;font-size:23px">${safe(item.keyword)}</h1>
+          </div>
+          <div style="padding:28px;text-align:center">
+            <p style="margin:0;color:#69717b">현재 확인된 최저가</p>
+            <strong style="display:block;margin:8px 0;color:#e52528;font-size:34px">${offer.price.toLocaleString()}원</strong>
+            <p style="margin:0;color:#369947">목표가 ${item.targetPrice.toLocaleString()}원 이하에 도달했습니다.</p>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">${rows}</table>
+          <p style="padding:18px;margin:0;color:#8a9098;font-size:11px">가격과 재고는 판매처에서 최종 확인하세요.</p>
         </div>
       </div>`,
   });
 }
-*/

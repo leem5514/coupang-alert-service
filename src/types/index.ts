@@ -1,36 +1,51 @@
-// 찜한 키워드 정보
+export type ProviderId = 'demo' | 'external';
+
 export interface WatchItem {
   id: number;
-  keyword: string;    
-  targetPrice: number;  
+  keyword: string;
+  requiredTerms: string[];
+  excludedTerms: string[];
+  targetPrice: number;
   email: string;
+  provider: ProviderId;
   createdAt: string;
   lastCheckedAt: string | null;
   lastNotifiedAt: string | null;
   isActive: boolean;
 }
 
-// 가격 조회 결과 (개별 상품)
-export interface ProductResult {
+export interface ProductOffer {
   productId: string;
   productName: string;
   price: number;
   seller: string;
   productUrl: string;
   imageUrl?: string;
-  source: 'partners_api' | 'scraper';
+  provider: ProviderId;
 }
 
-// 키워드 검색 결과
 export interface SearchResult {
   keyword: string;
-  products: ProductResult[];
+  offers: ProductOffer[];
   lowestPrice: number;
-  lowestProduct: ProductResult;
+  lowestOffer: ProductOffer;
+  provider: ProviderId;
   fetchedAt: Date;
 }
 
-// 가격 이력
+export interface SearchRequest {
+  keyword: string;
+  requiredTerms: string[];
+  excludedTerms: string[];
+}
+
+export interface PriceProvider {
+  id: ProviderId;
+  label: string;
+  isConfigured(): boolean;
+  search(request: SearchRequest): Promise<SearchResult | null>;
+}
+
 export interface PriceHistory {
   id: number;
   watchItemId: number;
@@ -40,18 +55,19 @@ export interface PriceHistory {
   checkedAt: string;
 }
 
-// 스케줄러가 관리하는 태스크
 export interface ScheduleTask {
   watchItemId: number;
   keyword: string;
+  requiredTerms: string[];
+  excludedTerms: string[];
+  provider: ProviderId;
   targetPrice: number;
   currentPrice: number | null;
   intervalMs: number;
   nextCheckAt: Date;
-  consecutiveApiErrors: number;
+  consecutiveErrors: number;
 }
 
-// 동적 주기 계산 결과
 export interface IntervalResult {
   intervalMs: number;
   reason: string;

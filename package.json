@@ -1,20 +1,18 @@
 {
-  "name": "coupang-price-alert",
+  "name": "price-radar",
   "version": "1.0.0",
-  "description": "쿠팡 키워드 가격 알림 서비스",
+  "description": "공식 가격 데이터 공급자를 연결하는 키워드 최저가 알림 서비스",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
-    "dev:cli": "ts-node src/index.ts",
-    "install:browsers": "playwright install chromium"
+    "dev:cli": "ts-node src/index.ts"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
     "dotenv": "^16.6.1",
-    "nodemailer": "^9.0.3",
-    "playwright": "^1.60.0"
+    "nodemailer": "^9.0.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.10",

@@ -1,14 +1,13 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import type { WatchItem, PriceHistory } from '../types';
+import { mkdirSync } from 'fs';
+import type { PriceHistory, ProviderId, WatchItem } from '../types';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'alert.db');
-
 let db: Database.Database;
 
 export function getDb(): Database.Database {
   if (!db) {
-    const { mkdirSync } = require('fs');
     mkdirSync(path.dirname(DB_PATH), { recursive: true });
     db = new Database(DB_PATH);
     db.pragma('journal_mode = WAL');
@@ -17,18 +16,27 @@ export function getDb(): Database.Database {
   return db;
 }
 
+function addColumnIfMissing(table: string, column: string, definition: string): void {
+  const columns = getDb().prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (!columns.some(item => item.name === column)) {
+    getDb().exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 function initSchema(): void {
-  const db = getDb();
-  db.exec(`
+  getDb().exec(`
     CREATE TABLE IF NOT EXISTS watch_items (
-      id              INTEGER PRIMARY KEY AUTOINCREMENT,
-      keyword         TEXT    NOT NULL,
-      target_price    INTEGER NOT NULL,
-      email           TEXT    NOT NULL,
-      created_at      TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-      last_checked_at TEXT,
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      keyword          TEXT    NOT NULL,
+      target_price     INTEGER NOT NULL,
+      email            TEXT    NOT NULL,
+      required_terms   TEXT    NOT NULL DEFAULT '[]',
+      excluded_terms   TEXT    NOT NULL DEFAULT '[]',
+      provider         TEXT    NOT NULL DEFAULT 'demo',
+      created_at       TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+      last_checked_at  TEXT,
       last_notified_at TEXT,
-      is_active       INTEGER NOT NULL DEFAULT 1
+      is_active        INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS price_history (
@@ -43,100 +51,102 @@ function initSchema(): void {
     CREATE INDEX IF NOT EXISTS idx_history_item
       ON price_history(watch_item_id, checked_at DESC);
   `);
+
+  addColumnIfMissing('watch_items', 'required_terms', "TEXT NOT NULL DEFAULT '[]'");
+  addColumnIfMissing('watch_items', 'excluded_terms', "TEXT NOT NULL DEFAULT '[]'");
+  addColumnIfMissing('watch_items', 'provider', "TEXT NOT NULL DEFAULT 'demo'");
 }
 
-export function addWatchItem(
-  keyword: string,
-  targetPrice: number,
-  email: string
-): WatchItem {
-  const db = getDb();
-  const stmt = db.prepare(`
-    INSERT INTO watch_items (keyword, target_price, email)
-    VALUES (?, ?, ?)
-  `);
-  const result = stmt.run(keyword, targetPrice, email);
+export function addWatchItem(input: {
+  keyword: string;
+  requiredTerms?: string[];
+  excludedTerms?: string[];
+  targetPrice: number;
+  email: string;
+  provider: ProviderId;
+}): WatchItem {
+  const result = getDb().prepare(`
+    INSERT INTO watch_items
+      (keyword, required_terms, excluded_terms, target_price, email, provider)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(
+    input.keyword,
+    JSON.stringify(input.requiredTerms ?? []),
+    JSON.stringify(input.excludedTerms ?? []),
+    input.targetPrice,
+    input.email,
+    input.provider,
+  );
   return getWatchItemById(result.lastInsertRowid as number)!;
 }
 
 export function getWatchItemById(id: number): WatchItem | null {
-  const db = getDb();
-  const row = db.prepare('SELECT * FROM watch_items WHERE id = ?').get(id) as any;
+  const row = getDb().prepare('SELECT * FROM watch_items WHERE id = ?').get(id) as any;
   return row ? mapWatchItem(row) : null;
 }
 
 export function getAllActiveWatchItems(): WatchItem[] {
-  const db = getDb();
-  const rows = db.prepare(
+  return (getDb().prepare(
     'SELECT * FROM watch_items WHERE is_active = 1 ORDER BY id'
-  ).all() as any[];
-  return rows.map(mapWatchItem);
+  ).all() as any[]).map(mapWatchItem);
 }
 
 export function updateLastChecked(id: number): void {
-  getDb().prepare(`
-    UPDATE watch_items SET last_checked_at = datetime('now','localtime') WHERE id = ?
-  `).run(id);
+  getDb().prepare(`UPDATE watch_items SET last_checked_at = datetime('now','localtime') WHERE id = ?`).run(id);
 }
 
 export function updateLastNotified(id: number): void {
-  getDb().prepare(`
-    UPDATE watch_items SET last_notified_at = datetime('now','localtime') WHERE id = ?
-  `).run(id);
+  getDb().prepare(`UPDATE watch_items SET last_notified_at = datetime('now','localtime') WHERE id = ?`).run(id);
 }
 
 export function deactivateWatchItem(id: number): void {
   getDb().prepare('UPDATE watch_items SET is_active = 0 WHERE id = ?').run(id);
 }
 
-export function addPriceHistory(
-  watchItemId: number,
-  price: number,
-  seller: string,
-  productUrl: string
-): void {
+export function addPriceHistory(watchItemId: number, price: number, seller: string, productUrl: string): void {
   getDb().prepare(`
     INSERT INTO price_history (watch_item_id, price, seller, product_url)
     VALUES (?, ?, ?, ?)
   `).run(watchItemId, price, seller, productUrl);
 }
 
-export function getRecentHistory(
-  watchItemId: number,
-  limit = 10
-): PriceHistory[] {
-  const rows = getDb().prepare(`
+export function getRecentHistory(watchItemId: number, limit = 10): PriceHistory[] {
+  return (getDb().prepare(`
     SELECT * FROM price_history
     WHERE watch_item_id = ?
     ORDER BY checked_at DESC
     LIMIT ?
-  `).all(watchItemId, limit) as any[];
-  return rows.map(r => ({
-    id: r.id,
-    watchItemId: r.watch_item_id,
-    price: r.price,
-    seller: r.seller,
-    productUrl: r.product_url,
-    checkedAt: r.checked_at,
+  `).all(watchItemId, limit) as any[]).map(row => ({
+    id: row.id,
+    watchItemId: row.watch_item_id,
+    price: row.price,
+    seller: row.seller,
+    productUrl: row.product_url,
+    checkedAt: row.checked_at,
   }));
 }
 
-export function getLowestEverPrice(watchItemId: number): number | null {
-  const row = getDb().prepare(`
-    SELECT MIN(price) AS min_price FROM price_history WHERE watch_item_id = ?
-  `).get(watchItemId) as any;
-  return row?.min_price ?? null;
+function parseTerms(value: unknown): string[] {
+  try {
+    const parsed = JSON.parse(String(value ?? '[]'));
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
 }
 
-function mapWatchItem(r: any): WatchItem {
+function mapWatchItem(row: any): WatchItem {
   return {
-    id: r.id,
-    keyword: r.keyword,
-    targetPrice: r.target_price,
-    email: r.email,
-    createdAt: r.created_at,
-    lastCheckedAt: r.last_checked_at,
-    lastNotifiedAt: r.last_notified_at,
-    isActive: r.is_active === 1,
+    id: row.id,
+    keyword: row.keyword,
+    requiredTerms: parseTerms(row.required_terms),
+    excludedTerms: parseTerms(row.excluded_terms),
+    targetPrice: row.target_price,
+    email: row.email,
+    provider: row.provider === 'external' ? 'external' : 'demo',
+    createdAt: row.created_at,
+    lastCheckedAt: row.last_checked_at,
+    lastNotifiedAt: row.last_notified_at,
+    isActive: row.is_active === 1,
   };
 }
